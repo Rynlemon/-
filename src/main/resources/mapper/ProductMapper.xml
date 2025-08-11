@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhk.mapper.ProductMapper">
+    <resultMap id="shoesResultMap" type="com.zhk.pojo.Shoes">
+        <id property="shoeId" column="shoe_id"/>
+        <result property="serialNumber" column="serial_number"/>
+        <result property="name" column="name"/>
+        <result property="originalPrice" column="original_price"/>
+        <result property="discountPrice" column="discounted_price"/>
+        <result property="launchDate" column="launch_date"/>
+        <result property="origin" column="origin"/>
+        <result property="genderApplication" column="gender_applicability"/>
+        <result property="productDescription" column="product_description"/>
+        <result property="totalSales" column="total_sales"/>
+        <result property="detailedInfo" column="detailed_info"/>
+        <result property="singleItemPoint" column="single_item_points"/>
+        <result property="disableStatus" column="disabled_status"/>
+        <result property="productImageUrl" column="product_image_url"/>
+
+        <!-- 一对多映射 （品牌）   -->
+        <association property="brand" javaType="com.zhk.pojo.Brand">
+            <id property="brandId" column="brand_id"/>
+            <result property="brandName" column="brand_name"/>
+            <result property="brandNotes" column="brand_notes"/>
+            <result property="brandGender" column="brand_gender"/>
+            <result property="brandDisabledStatus" column="brand_disabled_status"/>
+        </association>
+        <!-- 一对多映射 （颜色）   -->
+        <association property="color" javaType="com.zhk.pojo.Color">
+            <id property="colorId" column="color_id"/>
+            <result property="colorName" column="color_name"/>
+            <result property="colorNotes" column="color_notes"/>
+            <result property="colorDisabledStatus" column="color_disabled_status"/>
+        </association>
+        <!-- 一对多映射 （类型）   -->
+        <association property="shoesType" javaType="com.zhk.pojo.ShoesType">
+            <id property="typeId" column="type_id"/>
+            <result property="typeName" column="type_name"/>
+            <result property="typeNotes" column="type_notes"/>
+            <result property="typeStatus" column="type_status"/>
+        </association>
+        <!-- 多对多映射 （库存）   -->
+        <collection property="inventoryList" ofType="com.zhk.pojo.Inventory">
+            <id property="shoeId" column="shoe_id"/>
+            <id property="sizeId" column="size_id"/>
+            <result property="quantity" column="shoes_quantity"/>
+        </collection>
+
+    </resultMap>
+    <select id="getShoesList" resultMap="shoesResultMap">
+        SELECT *
+        FROM shoes s
+                 LEFT JOIN brands b ON s.brand_id = b.brand_id
+                 LEFT JOIN shoe_types st ON s.type_id = st.type_id
+                 LEFT JOIN colors c ON s.color_id = c.color_id
+                 LEFT JOIN inventory i ON s.shoe_id = i.shoe_id
+    </select>
+    
+<!--    根据id进行查询-->
+    <select id="getShoesById" resultMap="shoesResultMap">
+        SELECT *
+        FROM shoes s
+                 LEFT JOIN brands b ON s.brand_id = b.brand_id
+                 LEFT JOIN shoe_types st ON s.type_id = st.type_id
+                 LEFT JOIN colors c ON s.color_id = c.color_id
+                LEFT JOIN inventory i ON s.shoe_id = i.shoe_id
+        WHERE shoe_id = #{shoeId}
+    </select>
+<!--    修改内容，输入参数为Shoes类型对象-->
+    <update id="editShoes" >
+        UPDATE shoes
+        SET
+        serial_number = #{serialNumber},
+        name = #{name},
+        original_price = #{originalPrice},
+        discounted_price = #{discountPrice},
+        launch_date = #{launchDate},
+        origin = #{origin},
+        gender_applicability = #{genderApplication},
+        product_description = #{productDescription},
+        total_sales = #{totalSales},
+        detailed_info = #{detailedInfo},
+        single_item_points = #{singleItemPoint},
+        disabled_status = #{disableStatus},
+        product_image_url = #{productImageUrl},
+        brand_id = #{brand.brandId},      <!-- 如果 Shoes 对象包含 Brand 对象，并且要更新 brand_id -->
+        type_id = #{shoesType.typeId},    <!-- 如果 Shoes 对象包含 ShoesType 对象，并且要更新 type_id -->
+        color_id = #{color.colorId}       <!-- 如果 Shoes 对象包含 Color 对象，并且要更新 color_id -->
+        WHERE
+        shoe_id = #{shoeId}
+
+    </update>
+<!--    增加新的鞋子信息   useGeneratedKeys="true"目的是返回这个自增长的shoes_id返回值，返回值还会存在前端返回的shoes类型值里面-->
+    <insert id="addShoes" useGeneratedKeys="true" keyProperty="shoeId" keyColumn="shoe_id">
+        INSERT INTO shoes(serial_number,name,original_price,discounted_price,launch_date,origin,gender_applicability,product_description,total_sales,detailed_info,single_item_points,disabled_status,product_image_url,brand_id,type_id,color_id)
+        VALUES (#{serialNumber},#{name},#{originalPrice},#{discountPrice},#{launchDate},#{origin},#{genderApplication},#{productDescription},#{totalSales},#{detailedInfo},#{singleItemPoint},#{disableStatus},#{productImageUrl},#{brand.brandId},#{shoesType.typeId},#{color.colorId})
+    </insert>
+<!--    禁用状态的修改-->
+    <update id="updateDisableStatus">
+        UPDATE shoes
+        SET disabled_status = #{disableStatus}
+        WHERE shoe_id = #{shoeId}
+    </update>
+<!--    删除鞋子信息-->
+    <delete id="deleteShoes">
+        DELETE FROM shoes
+        WHERE shoe_id = #{shoeId}
+
+    </delete>
+<!--    库存添加-->
+    <insert id="addInventoryList">
+        INSERT INTO inventory(shoe_id,size_id,shoes_quantity) VALUES
+        <foreach collection="inventory" item="aaa" separator=",">
+        (#{shoes_id},#{aaa.sizeId},#{aaa.quantity})
+        </foreach>
+    </insert>
+<!--库存删除-->
+    <delete id="deleteInventoryList">
+        DELETE FROM inventory
+        WHERE shoe_id = #{shoes_id}
+        AND size_id = #{shoes_size_id}
+    </delete>
+<!--    库存修改-->
+    <update id="editInventory">
+        UPDATE inventory
+        <set>
+            <if test="quantity != null">
+                shoes_quantity = #{quantity}
+            </if>
+        </set>
+        WHERE shoe_id = #{shoes_id}
+        AND size_id = #{shoes_size_id}
+    </update>
+</mapper>

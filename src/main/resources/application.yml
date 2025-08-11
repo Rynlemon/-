@@ -1,0 +1,43 @@
+server:
+  port: 8083
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/user?serverTimezone=UTC&useUnicode=true&characterEncoding=utf-8&useSSL=true
+    username: root
+    password: ""
+  servlet:
+    multipart:
+      max-request-size: 2MB  # 请求大小限制
+      max-file-size: 2MB     # 单个文件大小限制
+
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.zhk.pojo
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 登录配置
+jwt:
+  secret: mySecretKey
+  expiration: 86400000 # 24小时
+
+# Swagger配置
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+
+pagehelper:
+  helper-dialect: mysql
+  reasonable: true
+  support-methods-arguments: true
+  params: count=countSql
+# application.yml
+file:
+  upload:
+    path: D:/upload/  # 统一的上传路径
+
